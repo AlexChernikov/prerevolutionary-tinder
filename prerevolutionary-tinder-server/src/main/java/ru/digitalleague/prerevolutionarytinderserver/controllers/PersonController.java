@@ -4,13 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.FavoritePersonDto;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.PersonDto;
+import ru.digitalleague.prerevolutionarytinderserver.servicies.BlackListService;
+import ru.digitalleague.prerevolutionarytinderserver.servicies.FavoriteListService;
 import ru.digitalleague.prerevolutionarytinderserver.servicies.PersonService;
 
-import javax.swing.text.html.Option;
-import java.io.File;
-import java.io.InputStream;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping(value = "/person-controller")
@@ -18,6 +16,10 @@ public class PersonController {
 
     @Autowired
     PersonService personService;
+    @Autowired
+    FavoriteListService favoriteListService;
+    @Autowired
+    BlackListService blackListService;
 
     @GetMapping(value = "/is-registered-person-by-chat-id/{chatId}")
     public boolean isRegisteredPersonByChatId(@PathVariable("chatId") Long chatId) {
@@ -66,12 +68,12 @@ public class PersonController {
 
     @GetMapping(value = "/add-person-to-blacklist/{chatId}/{bannedPersonId}")
     public boolean addPersonToBlacklist(@RequestParam("chatId") Long chatId, @RequestParam("bannedPersonId") Long bannedPersonId) {
-        return personService.addPersonToBlacklist(chatId, bannedPersonId);
+        return blackListService.addPersonToBlacklist(chatId, bannedPersonId);
     }
 
     @GetMapping(value = "/add-person-to-favotitelist/{chatId}/{favoritePersonId}")
     public boolean addPersonToFavoritelist(@RequestParam("chatId") Long chatId, @RequestParam("favoritePersonId") Long favoritePersonId) {
-        return personService.addPersonToFavoritelist(chatId, favoritePersonId);
+        return favoriteListService.addPersonToFavoritelist(chatId, favoritePersonId);
     }
 
     @GetMapping(value = "/have-person-age/{chatId}")

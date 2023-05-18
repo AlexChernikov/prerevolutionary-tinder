@@ -5,19 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.FavoritePersonDto;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.PersonDto;
-import ru.digitalleague.prerevolutionarytinderdatabase.entities.BlackList;
-import ru.digitalleague.prerevolutionarytinderdatabase.entities.FavoriteList;
 import ru.digitalleague.prerevolutionarytinderdatabase.entities.Person;
 import ru.digitalleague.prerevolutionarytinderdatabase.enums.Gender;
 import ru.digitalleague.prerevolutionarytinderdatabase.enums.Orientation;
-import ru.digitalleague.prerevolutionarytinderdatabase.enums.RomanceStatus;
-import ru.digitalleague.prerevolutionarytinderdatabase.repositories.BlackListRepository;
-import ru.digitalleague.prerevolutionarytinderdatabase.repositories.FavoriteListRepository;
 import ru.digitalleague.prerevolutionarytinderdatabase.repositories.PersonRepository;
+import ru.digitalleague.prerevolutionarytinderserver.mappers.PersonMapper;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,16 +21,18 @@ import java.util.stream.Collectors;
 public class PersonService {
 
     PersonRepository personRepository;
-    BlackListRepository blackListRepository;
-    FavoriteListRepository favoriteListRepository;
+    FavoriteListService favoriteListService;
+    BlackListService blackListService;
     ImageService imageService;
+    PersonMapper personMapper;
 
     @Autowired
-    public PersonService(PersonRepository personRepository, BlackListRepository blackListRepository, FavoriteListRepository favoriteListRepository, ImageService imageService) {
+    public PersonService(PersonRepository personRepository, FavoriteListService favoriteListService, BlackListService blackListService, ImageService imageService, PersonMapper personMapper) {
         this.personRepository = personRepository;
-        this.blackListRepository = blackListRepository;
-        this.favoriteListRepository = favoriteListRepository;
+        this.favoriteListService = favoriteListService;
+        this.blackListService = blackListService;
         this.imageService = imageService;
+        this.personMapper = personMapper;
     }
 
     public boolean isRegisteredPersonByChatId(Long chatId) {
@@ -58,28 +53,12 @@ public class PersonService {
         favoriteDatingProfiles.addAll(anotherDatingProfiles);
 
         List<PersonDto> resultDatingProfiles = favoriteDatingProfiles.stream()
-                .map(person -> mapPersonOnPersonDto(person))
+                .map(person -> personMapper.mapPersonOnPersonDto(person))
                 .collect(Collectors.toList());
 
         if (resultDatingProfiles.isEmpty()) return new PersonDto();
 
         return resultDatingProfiles.get(0);
-    }
-
-    private PersonDto mapPersonOnPersonDto(Person person) {
-        log.debug("Mapping person on personDto personId {}", person.getId());
-        PersonDto personDto = new PersonDto();
-        personDto.setIsEmpty(false);
-        personDto.setId(person.getId());
-        personDto.setNickname(person.getNickname());
-        personDto.setGender(person.getGender());
-        personDto.setOrientation(person.getOrientation());
-        personDto.setAge(person.getAge());
-        personDto.setHeader(person.getHeader());
-        personDto.setDescription(person.getDescription());
-        List<Byte> imageFile = imageService.createImage(person.getId(), person.getHeader(), person.getAge().toString(), person.getDescription());
-        personDto.setImageFile(imageFile);
-        return personDto;
     }
 
     public List<FavoritePersonDto> getFavoritesProfilesByChatId(Long chatId) {
@@ -92,45 +71,10 @@ public class PersonService {
         List<Person> favoriteDatingProfiles = personRepository.getDistinctFavoriteDatingProfilesByPersonId(mainPerson.getId());
 
         List<FavoritePersonDto> favoritePersonDtos = favoriteDatingProfiles.stream()
-                .map(person -> mapPersonOnFavoritePersonDto(mainPerson.getId(), person))
+                .map(person -> personMapper.mapPersonOnFavoritePersonDto(mainPerson.getId(), person))
                 .collect(Collectors.toList());
 
         return favoritePersonDtos;
-    }
-
-    private FavoritePersonDto mapPersonOnFavoritePersonDto(Long mainPersonId, Person person) {
-        log.debug("Mapping person on favoritePersonDto personId {}", person.getId());
-        FavoritePersonDto favoritePersonDto = new FavoritePersonDto();
-        favoritePersonDto.setId(person.getId());
-        favoritePersonDto.setNickname(person.getNickname());
-        favoritePersonDto.setGender(person.getGender());
-        favoritePersonDto.setOrientation(person.getOrientation());
-        favoritePersonDto.setAge(person.getAge());
-        favoritePersonDto.setHeader(person.getHeader());
-        favoritePersonDto.setDescription(person.getDescription());
-        List<Byte>  imageFile = imageService.createImage(person.getId(), person.getHeader(), person.getAge().toString(), person.getDescription());
-        favoritePersonDto.setImageFile(imageFile);
-        favoritePersonDto.setRomanceStatus(getRomanceStatus(mainPersonId, person.getId()));
-        return favoritePersonDto;
-    }
-
-    private RomanceStatus getRomanceStatus(Long mainPersonId, Long personId) {
-        log.debug("Get romance status by mainPersonId {} and personId {}", mainPersonId, personId);
-        Optional<FavoriteList> mainPersonIdAndPersonIdFavoriteList = favoriteListRepository.findByPersonIdAndFavoritePersonId(mainPersonId, personId);
-        FavoriteList favoriteList = mainPersonIdAndPersonIdFavoriteList.orElse(null);
-
-        if (favoriteList != null) {
-            return favoriteList.getRomanceStatus();
-        } else {
-            Optional<FavoriteList> personIdAndMainPersonIdFavoriteList = favoriteListRepository.findByPersonIdAndFavoritePersonId(personId, mainPersonId);
-            favoriteList = personIdAndMainPersonIdFavoriteList.orElse(null);
-
-            if (favoriteList != null) {
-                return RomanceStatus.YOU_LIKED;
-            } else {
-                throw new RuntimeException("Cant find at FavoriteList romance status!");
-            }
-        }
     }
 
     public List<Byte> getAccountPicture(Long chatId) {
@@ -244,57 +188,5 @@ public class PersonService {
         personRepository.save(person);
         return true;
 
-    }
-
-    public boolean addPersonToBlacklist(Long chatId, Long bannedPersonId) {
-        log.info("At chat {} ban person with id {}", chatId, bannedPersonId);
-        Optional<Person> personOptional = personRepository.findByChatId(chatId);
-        Person person = personOptional.orElse(null);
-
-//        if (person == null) return false;
-
-        if (!blackListRepository.containsByPersonIdAndBannedPersonId(person.getId(), bannedPersonId)
-         && !favoriteListRepository.containsByPersonIdAndFavoritePersonId(person.getId(), bannedPersonId)) {
-            BlackList blackList = new BlackList();
-            blackList.setPersonId(person.getId());
-            blackList.setBannedPersonId(bannedPersonId);
-            blackListRepository.save(blackList);
-        }
-
-        return true;
-    }
-
-    public boolean addPersonToFavoritelist(Long chatId, Long favoritePersonId) {
-        log.info("At chat {} add to favorite person with id {}", chatId, favoritePersonId);
-        Optional<Person> personOptional = personRepository.findByChatId(chatId);
-        Person person = personOptional.orElse(null);
-
-//        if (person == null) return false;
-
-        if (!favoriteListRepository.containsByPersonIdAndFavoritePersonId(person.getId(), favoritePersonId)
-         && !blackListRepository.containsByPersonIdAndBannedPersonId(person.getId(), favoritePersonId)) {
-            FavoriteList favoriteList = new FavoriteList();
-            favoriteList.setPersonId(person.getId());
-            favoriteList.setFavoritePersonId(favoritePersonId);
-            favoriteList.setRomanceStatus(getRomanceStatusAndUpdate(person.getId(), favoritePersonId));
-            favoriteListRepository.save(favoriteList);
-        }
-
-        return true;
-
-
-    }
-
-    private RomanceStatus getRomanceStatusAndUpdate(Long personId, Long favoritePersonId) {
-        log.debug("Get romance status by mainPersonId {} and favoritePersonId {}", personId, favoritePersonId);
-        Optional<FavoriteList> favoriteListOptional = favoriteListRepository.findByPersonIdAndFavoritePersonId(favoritePersonId, personId);
-        FavoriteList favoriteList = favoriteListOptional.orElse(null);
-        if (favoriteList == null) {
-            return RomanceStatus.YOU_LIKE;
-        } else {
-            favoriteList.setRomanceStatus(RomanceStatus.MUTUALLY_LIKED);
-            favoriteListRepository.save(favoriteList);
-            return RomanceStatus.MUTUALLY_LIKED;
-        }
     }
 }
