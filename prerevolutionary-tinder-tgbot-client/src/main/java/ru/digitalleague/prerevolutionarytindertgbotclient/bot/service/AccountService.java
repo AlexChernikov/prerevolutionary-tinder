@@ -1,16 +1,19 @@
 package ru.digitalleague.prerevolutionarytindertgbotclient.bot.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.PersonDto;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.entity.ImageMessageDto;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.enums.ButtonCommandEnum;
+import ru.digitalleague.prerevolutionarytindertgbotclient.bot.exceptions.BusinessPictureException;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.feign.FeignService;
 
 import java.io.File;
 
 @Service
+@Slf4j
 public class AccountService {
 
     private final FeignService dbService;
@@ -39,7 +42,12 @@ public class AccountService {
             sendMessage.setText(messageService.getMessage("bot.command.search.emptylist"));
             imageMessageDto.setSendMessage(sendMessage);
         } else {
-            File picture = pictureService.createPicture(chatId, personDto.getImageFile());
+            File picture = null;
+            try{
+                picture = pictureService.createPicture(chatId, personDto.getImageFile());
+            } catch (BusinessPictureException businessPictureException) {
+                log.error(businessPictureException.getMessage());
+            }
             SendPhoto sendPhoto = pictureService.getSendPhoto(chatId, picture);
             SendMessage sendMessage = buttonService.getButtonByCommand(ButtonCommandEnum.SEARCH, chatId, personDto.getId());
             imageMessageDto.setSendPhoto(sendPhoto);

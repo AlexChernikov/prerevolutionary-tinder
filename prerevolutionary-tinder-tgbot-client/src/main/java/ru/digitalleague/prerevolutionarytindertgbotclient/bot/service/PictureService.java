@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import ru.digitalleague.prerevolutionarytindertgbotclient.bot.exceptions.BusinessPictureException;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.feign.FeignService;
 
 import javax.imageio.ImageIO;
@@ -26,9 +27,14 @@ public class PictureService {
 
     public SendPhoto getPicture(long chatId) {
         List<Byte> accountPictureByteArray = dbService.getAccountPicture(chatId);
-        File picture = createPicture(chatId, accountPictureByteArray);
-
-        return getSendPhoto(chatId, picture);
+        File picture = null;
+        try {
+            picture = createPicture(chatId, accountPictureByteArray);
+            return getSendPhoto(chatId, picture);
+        } catch (BusinessPictureException businessPictureException){
+            log.error(businessPictureException.getMessage());
+        }
+        return new SendPhoto();
     }
 
     public SendPhoto getSendPhoto(long chatId, File picture) {
@@ -40,7 +46,7 @@ public class PictureService {
         return sendPhoto;
     }
 
-    public File createPicture(long chatId, List<Byte> listBytes){
+    public File createPicture(long chatId, List<Byte> listBytes) throws BusinessPictureException{
         byte[] bytes = new byte[listBytes.size()];
         for (int i = 0; i < listBytes.size(); i++) {
             bytes[i] = listBytes.get(i);
@@ -51,7 +57,7 @@ public class PictureService {
         try {
             image = ImageIO.read(inputStream);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BusinessPictureException(e.getMessage());
         }
 
         File outputfile = new File("info" + chatId + ".png");
@@ -59,7 +65,7 @@ public class PictureService {
         try {
             ImageIO.write(image, "png", outputfile);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BusinessPictureException(e.getMessage());
         }
         return outputfile;
     }

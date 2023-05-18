@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.FavoritePersonDto;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.entity.ImageMessageDto;
+import ru.digitalleague.prerevolutionarytindertgbotclient.bot.exceptions.BusinessPictureException;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.feign.FeignService;
 
 import java.io.File;
@@ -42,8 +43,8 @@ public class FavoritesService {
                 imageMessageDto.setSendMessage(sendMessage);
                 imageMessageDtoList.add(imageMessageDto);
             }
-        } catch (NotFoundException notFoundException){
-            log.error(notFoundException.getMessage());
+        } catch (NotFoundException | BusinessPictureException exception){
+            log.error(exception.getMessage());
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(chatId);
             sendMessage.setText(messageService.getMessage("bot.command.menu.favorites.empty"));
