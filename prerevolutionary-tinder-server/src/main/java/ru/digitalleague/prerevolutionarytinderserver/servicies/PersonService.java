@@ -82,7 +82,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) return null;
+        if (person == null) throw new RuntimeException();
 
         return imageService.createImage(person.getId(), person.getHeader(), person.getAge().toString(), person.getDescription());
     }
@@ -101,7 +101,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) return false;
+        if (person == null)  throw new RuntimeException();
 
         person.setNickname(personName);
         personRepository.save(person);
@@ -113,7 +113,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) return false;
+        if (person == null) throw new RuntimeException();
 
         person.setDescription(aboutText);
         personRepository.save(person);
@@ -124,9 +124,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) {
-            return false;
-        }
+        if (person == null) throw new RuntimeException();
         if (person.getNickname() == null || person.getNickname().isEmpty()) {
             return false;
         }
@@ -138,7 +136,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) return false;
+        if (person == null)  throw new RuntimeException();
 
         person.setOrientation(Orientation.valueOf(orientation));
         personRepository.save(person);
@@ -149,9 +147,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null || person.getAge() == null) {
-            return false;
-        }
+        if (person == null || person.getAge() == null) throw new RuntimeException();
         return true;
     }
 
@@ -160,7 +156,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) return false;
+        if (person == null)  throw new RuntimeException();
 
         person.setAge(age);
         personRepository.save(person);
@@ -171,9 +167,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null || person.getHeader() == null) {
-            return false;
-        }
+        if (person == null || person.getHeader() == null)  throw new RuntimeException();
         return true;
     }
 
@@ -182,7 +176,7 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findByChatId(chatId);
         Person person = personOptional.orElse(null);
 
-        if (person == null) return false;
+        if (person == null)  throw new RuntimeException();
 
         person.setHeader(header);
         personRepository.save(person);
