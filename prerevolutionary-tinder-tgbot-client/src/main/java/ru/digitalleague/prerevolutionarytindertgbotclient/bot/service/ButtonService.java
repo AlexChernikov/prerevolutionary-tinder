@@ -65,7 +65,7 @@ public class ButtonService {
     }
 
     public SendMessage getButtonByCommand(ButtonCommandEnum buttonCommandEnum, long chatId, long id) {
-
+        //Не понимаю почему и зачем нужно это перенести в Енум.
         switch (buttonCommandEnum) {
             case ABOUT -> {
                 Map<String, String> paramMap = new HashMap<>();
@@ -97,6 +97,7 @@ public class ButtonService {
         return new SendMessage();
     }
 
+    //Аналогично, немного не понимаю зачем переносить в енум.
     public SendMessage getMenuButtons(long chatId) {
         Map<String, String> paramMap = new HashMap<>();
         paramMap.put(messageService.getMessage("bot.command.menu.search.description"),
