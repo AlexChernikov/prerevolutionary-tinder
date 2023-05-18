@@ -9,10 +9,7 @@ import ru.digitalleague.prerevolutionarytindertgbotclient.bot.enums.BotCommandEn
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.enums.ButtonCommandEnum;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.feign.FeignService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -28,22 +25,20 @@ public class ButtonService {
     }
 
     public SendMessage getButtonByCommand(BotCommandEnum commandEnum, long chatId) {
-        switch (commandEnum) {
-            case START -> {
-                if (!dbService.isRegistered(chatId)) {
-                    Map<String, String> paramMap = new HashMap<>();
-                    paramMap.put(messageService.getMessage("bot.command.person.male.description"),
-                            messageService.getMessage("bot.command.person.male.name"));
-                    paramMap.put(messageService.getMessage("bot.command.person.female.description"),
-                            messageService.getMessage("bot.command.person.female.name"));
+        if (Objects.requireNonNull(commandEnum).equals(BotCommandEnum.START)) {
+            if (!dbService.isRegistered(chatId)) {
+                Map<String, String> paramMap = new HashMap<>();
+                paramMap.put(messageService.getMessage("bot.command.person.male.description"),
+                        messageService.getMessage("bot.command.person.male.name"));
+                paramMap.put(messageService.getMessage("bot.command.person.female.description"),
+                        messageService.getMessage("bot.command.person.female.name"));
 
-                    SendMessage sendMessage = createKeyboardButtons(paramMap);
-                    sendMessage.setText(messageService.getMessage("bot.command.person.whoareyou"));
-                    sendMessage.setChatId(chatId);
-                    return sendMessage;
-                } else {
-                    return getMenuButtons(chatId);
-                }
+                SendMessage sendMessage = createKeyboardButtons(paramMap);
+                sendMessage.setText(messageService.getMessage("bot.command.person.whoareyou"));
+                sendMessage.setChatId(chatId);
+                return sendMessage;
+            } else {
+                return getMenuButtons(chatId);
             }
         }
         return new SendMessage();
