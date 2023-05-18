@@ -38,21 +38,31 @@ public class ParseCommandService {
         this.favoritesService = favoritesService;
     }
 
+    private BotCommandEnum parseBotCommand(String text) {
+        String command = text.replaceAll("/", "");
+        return BotCommandEnum.valueOf(command.toUpperCase());
+    }
+
     public SendMessage parseCommand(String textCommand, long chatId) {
         log.info("Parse command");
         SendMessage sendMessage = new SendMessage();
-        String command = textCommand.replaceAll("/", "");
-        BotCommandEnum botAndButtonCommandEnum = BotCommandEnum.valueOf(command.toUpperCase());
+        BotCommandEnum botAndButtonCommandEnum = null;
+        try{
+            botAndButtonCommandEnum = parseBotCommand(textCommand);
+        } catch (NullPointerException | IllegalArgumentException nullPointerException) {
+            log.error(nullPointerException.getMessage());
+            sendMessage.setText(messageService.getMessage("message.bot.command.unknown"));
+            sendMessage.setChatId(chatId);
+            return sendMessage;
+        }
 
         switch (botAndButtonCommandEnum) {
             case START: {
                 sendMessage = buttonService.getButtonByCommand(botAndButtonCommandEnum, chatId);
-                break;
             }
             case HELP: {
                 sendMessage.setText(messageService.getMessage("bot.command.help"));
                 sendMessage.setChatId(chatId);
-                break;
             }
         }
         return sendMessage;
@@ -77,18 +87,18 @@ public class ParseCommandService {
             dbService.savePersonOrientation(chatId, buttonCommandEnum);
             imageMessageDto.setSendPhoto(pictureService.getPicture(chatId));
             sendMessage = buttonService.getMenuButtons(chatId);
-        } else if (buttonCommandEnum.equals(ButtonCommandEnum.ACCOUNT)){
+        } else if (buttonCommandEnum.equals(ButtonCommandEnum.ACCOUNT)) {
             imageMessageDto.setSendPhoto(pictureService.getPicture(chatId));
             sendMessage = buttonService.getMenuButtons(chatId);
-        } else if (buttonCommandEnum.equals(ButtonCommandEnum.SEARCH)){
+        } else if (buttonCommandEnum.equals(ButtonCommandEnum.SEARCH)) {
             imageMessageDtoList.add(searchService.searchAccount(chatId));
             return imageMessageDtoList;
-        } else if (buttonCommandEnum.equals(ButtonCommandEnum.LIKE) || buttonCommandEnum.equals(ButtonCommandEnum.DISLIKE)){
+        } else if (buttonCommandEnum.equals(ButtonCommandEnum.LIKE) || buttonCommandEnum.equals(ButtonCommandEnum.DISLIKE)) {
             likedOrDislikedId = parseLikedOrDislikedId(data, buttonCommandEnum.name());
             dbService.setReactionToAccount(buttonCommandEnum, chatId, likedOrDislikedId);
             imageMessageDtoList.add(searchService.searchAccount(chatId));
             return imageMessageDtoList;
-        } else if (buttonCommandEnum.equals(ButtonCommandEnum.FAVORITES)){
+        } else if (buttonCommandEnum.equals(ButtonCommandEnum.FAVORITES)) {
             imageMessageDtoList = favoritesService.getFavorites(chatId);
             sendMessage = buttonService.getMenuButtons(chatId);
         }
@@ -98,10 +108,10 @@ public class ParseCommandService {
         return imageMessageDtoList;
     }
 
-    private ButtonCommandEnum createButtonCommandEnum(String data){
+    private ButtonCommandEnum createButtonCommandEnum(String data) {
         ButtonCommandEnum buttonCommandEnum;
 
-        if (isDislikeCommand(data)){
+        if (isDislikeCommand(data)) {
             buttonCommandEnum = ButtonCommandEnum.DISLIKE;
         } else if (isLikeCommand(data)) {
             buttonCommandEnum = ButtonCommandEnum.LIKE;
@@ -111,15 +121,15 @@ public class ParseCommandService {
         return buttonCommandEnum;
     }
 
-    private long parseLikedOrDislikedId(String data, String replacer){
+    private long parseLikedOrDislikedId(String data, String replacer) {
         return Long.parseLong(data.toUpperCase().substring(1).replace(replacer, ""));
     }
 
-    private boolean isLikeCommand(String command){
+    private boolean isLikeCommand(String command) {
         return command.contains("like");
     }
 
-    private boolean isDislikeCommand(String command){
+    private boolean isDislikeCommand(String command) {
         return command.contains("dislike");
     }
 
