@@ -57,10 +57,10 @@ public class ParseCommandService {
         }
 
         switch (botAndButtonCommandEnum) {
-            case START: {
+            case START -> {
                 sendMessage = buttonService.getButtonByCommand(botAndButtonCommandEnum, chatId);
             }
-            case HELP: {
+            case HELP -> {
                 sendMessage.setText(messageService.getMessage("bot.command.help"));
                 sendMessage.setChatId(chatId);
             }

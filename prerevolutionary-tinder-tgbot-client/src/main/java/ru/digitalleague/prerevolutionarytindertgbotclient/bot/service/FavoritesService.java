@@ -1,5 +1,7 @@
 package ru.digitalleague.prerevolutionarytindertgbotclient.bot.service;
 
+import jakarta.ws.rs.NotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.FavoritePersonDto;
@@ -11,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class FavoritesService {
 
     private final FeignService dbService;
@@ -26,26 +29,28 @@ public class FavoritesService {
     }
 
     public List<ImageMessageDto> getFavorites(long chatId){
-        List<FavoritePersonDto> favoritesList = dbService.getFavoritesByChatId(chatId);
         List<ImageMessageDto> imageMessageDtoList = new ArrayList<>();
-        ImageMessageDto imageMessageDto = new ImageMessageDto();
-        SendMessage sendMessage = new SendMessage();
-
-        if (favoritesList.isEmpty()){
+        try {
+            List<FavoritePersonDto> favoritesList = dbService.getFavoritesByChatId(chatId);
+            ImageMessageDto imageMessageDto = new ImageMessageDto();
+            for (FavoritePersonDto favoritePersonDto : favoritesList) {
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chatId);
+                sendMessage.setText(favoritePersonDto.getRomanceStatus().getRussianName());
+                File picture = pictureService.createPicture(favoritePersonDto.getId(), favoritePersonDto.getImageFile());
+                imageMessageDto.setSendPhoto(pictureService.getSendPhoto(chatId, picture));
+                imageMessageDto.setSendMessage(sendMessage);
+                imageMessageDtoList.add(imageMessageDto);
+            }
+        } catch (NotFoundException notFoundException){
+            log.error(notFoundException.getMessage());
+            SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(chatId);
             sendMessage.setText(messageService.getMessage("bot.command.menu.favorites.empty"));
+            ImageMessageDto imageMessageDto = new ImageMessageDto();
             imageMessageDto.setSendMessage(sendMessage);
             imageMessageDtoList.add(imageMessageDto);
             return imageMessageDtoList;
-        }
-
-        for (FavoritePersonDto favoritePersonDto : favoritesList) {
-            sendMessage.setChatId(chatId);
-            sendMessage.setText(favoritePersonDto.getRomanceStatus().getRussianName());
-            File picture = pictureService.createPicture(favoritePersonDto.getId(), favoritePersonDto.getImageFile());
-            imageMessageDto.setSendPhoto(pictureService.getSendPhoto(chatId, picture));
-            imageMessageDto.setSendMessage(sendMessage);
-            imageMessageDtoList.add(imageMessageDto);
         }
         return imageMessageDtoList;
     }

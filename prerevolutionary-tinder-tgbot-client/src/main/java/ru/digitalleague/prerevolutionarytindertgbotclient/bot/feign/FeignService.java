@@ -1,10 +1,12 @@
 package ru.digitalleague.prerevolutionarytindertgbotclient.bot.feign;
 
+import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.FavoritePersonDto;
 import ru.digitalleague.prerevolutionarytinderdatabase.dtos.PersonDto;
 import ru.digitalleague.prerevolutionarytindertgbotclient.bot.enums.ButtonCommandEnum;
+import ru.digitalleague.prerevolutionarytindertgbotclient.bot.service.MessageService;
 
 import java.util.List;
 
@@ -13,9 +15,11 @@ import java.util.List;
 public class FeignService {
 
     private final FeignClientInterface feignClientInterface;
+    private final MessageService messageService;
 
-    public FeignService(FeignClientInterface feignClientInterface) {
+    public FeignService(FeignClientInterface feignClientInterface,MessageService messageService) {
         this.feignClientInterface = feignClientInterface;
+        this.messageService = messageService;
     }
 
     public boolean isRegistered(long chatId) {
@@ -74,7 +78,12 @@ public class FeignService {
         }
     }
 
-    public List<FavoritePersonDto> getFavoritesByChatId(long chatId){
-        return feignClientInterface.getFavoritesProfilesByChatId(chatId);
+    public List<FavoritePersonDto> getFavoritesByChatId(long chatId) throws NotFoundException{
+        List<FavoritePersonDto> favoritesByChatId = feignClientInterface.getFavoritesProfilesByChatId(chatId);
+        if (favoritesByChatId.isEmpty()){
+            throw new NotFoundException(messageService.getMessage("bot.command.menu.favorites.empty"));
+        } else {
+            return favoritesByChatId;
+        }
     }
 }
