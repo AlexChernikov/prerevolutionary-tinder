@@ -65,16 +65,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         SendPhoto sendPhoto = null;
         List<ImageMessageDto> imageMessageDtoList = null;
 
-        if (update.getMessage() == null && update.getCallbackQuery() == null) {
+        if (update.getMessage() == null || update.getMessage().getText() == null || update.getMessage().getPhoto() !=null) {
             sendMessage.setChatId(update.getMessage().getChatId());
             sendMessage.setText(messageService.getMessage("message.bot.command.emptyCommand"));
+            sendMessage(sendMessage, sendPhoto);
         } else {
             imageMessageDtoList = directionMessage(update, sendMessage, sendPhoto);
-        }
-        assert imageMessageDtoList != null;
-
-        for (ImageMessageDto dto : imageMessageDtoList) {
-            sendMessage(dto.getSendMessage(), dto.getSendPhoto());
+            for (ImageMessageDto dto : imageMessageDtoList) {
+                sendMessage(dto.getSendMessage(), dto.getSendPhoto());
+            }
         }
     }
 
