@@ -42,7 +42,6 @@ public class ImageService {
     private static final List<String> iVowels = List.of("иа",
             "ие",
             "иё",
-            "ии",
             "ио",
             "иу",
             "иы",
@@ -52,7 +51,6 @@ public class ImageService {
             "Иа",
             "Ие",
             "Иё",
-            "Ии",
             "Ио",
             "Иу",
             "Иы",
@@ -482,9 +480,20 @@ public class ImageService {
     }
 
     private String translateDescription(String description) {
+        /**
+         *
+         * В условии задачи Боря привёл список из конкретных слов, которые надо менять.
+         * Поэтому проверяются не все слова, а те, что дал Боря.
+         */
         for (String word : W_O_R_D_S) {
             description = description.replaceAll(word, word.replace("е", "ѣ"));
         }
+
+        /**
+         * ъ (он же ер) пишется в конце всякого слова, оканчивающегося на согласную: столъ, телефонъ, Санктъ-Петербургъ.
+         * Это касается и слов с шипящими согласными в конце: мячъ, ужъ замужъ невтерпежъ.
+         * (с) Боря
+         *  **/
         for (String wordEnding : wordEndings) {
             description = description.replaceAll(wordEnding, wordEnding.substring(0, 1) + "ъ ");
         }
@@ -495,19 +504,26 @@ public class ImageService {
         return description;
     }
 
+    //Разбиваем описание на лист строк, каждая длиной до 50 символов.
     private static List<String> getDescriptionList(String description) {
         List<String> descriptions = new ArrayList<>();
         while (description.length() > STRING_SIZE) {
-            for (int i = 50; i > 0; i--) {
+            //Откусываем от начала дискрипшина строку длинной в 50 символов.
+            for (int i = STRING_SIZE; i > 0; i--) {
                 char c = description.charAt(i);
+                //Ищем первый пробел с конца, чтоб не обрезать слова и выдавать ровную строку.
                 if (c == ' ') {
+                    //Обрезаем дескрипшин по символу пробела.
                     String newString = description.substring(0, i);
+                    //Записываем остаток дискрипшина.
                     description = description.substring(i+1, description.length());
+                    //Сохраняем откусанную строку.
                     descriptions.add(newString);
                     break;
                 }
             }
         }
+        //Последний остаток тоже сохраняем.
         descriptions.add(description);
         return descriptions;
     }
